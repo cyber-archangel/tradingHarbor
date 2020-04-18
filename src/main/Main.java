@@ -2,15 +2,15 @@ package main;
 
 import java.util.*;
 import java.util.concurrent.*;
-
 import main.ships.*;
+import javax.swing.Timer;
 
 public class Main {
 
     private final Harbor harbor = new Harbor();
     private final String[] shipDrawings = {"light", "average", "heavy"};
-    private final ScheduledExecutorService dayTimer = Executors.newScheduledThreadPool(1);
     private final Random random = new Random();
+    private boolean readiness = true;
 
     public static void main(String[] args) {
         new Main().run();
@@ -19,27 +19,49 @@ public class Main {
     private void run() {
         System.out.println("A new profitable day has begun ...");
 
-        dayTimer.scheduleWithFixedDelay(() -> {
-            if(System.currentTimeMillis() == 15000)
-                shipQueueMaking(false);
-        }, 0, 1, TimeUnit.SECONDS);
+        Timer day = new Timer(10000, event -> readiness = !readiness);
 
-        shipQueueMaking(true);
+        day.start();
 
-        if(dayTimer.isTerminated())
-            System.out.println("The day is over!");
-    }
-
-    private synchronized void shipQueueMaking(boolean readiness) {
-        ArrayList<Callable<Ship>> ships = launchShips(readiness);
-    }
-
-    private ArrayList<Callable<Ship>> launchShips(boolean readiness) {
-        ArrayList<Callable<Ship>> ships = new ArrayList<>();
-        while(readiness) {
-            //Callable<Ship> ship = new ShipCallable(harbor::);
-            //FutureTask<Ship> shipFutureTask = new FutureTask<>(ship);
+        try {
+            shipsQueueMaking();
+            while (day.isRunning()) {
+                synchronized (day) {
+                    day.wait();
+                }
+            }
+        } catch (InterruptedException | ExecutionException exception) {
+            exception.printStackTrace(System.out);
         }
+
+        System.out.println("The day is over! Profit: " + harbor.getTotalProfit());
+    }
+
+    private synchronized void shipsQueueMaking() throws ExecutionException, InterruptedException {
+        ArrayList<Thread> ships = launchShips();
+        ships.forEach(this::addToQueue);
+    }
+
+    private ArrayList<Thread> launchShips() throws ExecutionException, InterruptedException {
+        Callable<ArrayList<Thread>> shipsCallable = new ShipCreator();
+        FutureTask<ArrayList<Thread>> ships = new FutureTask<>(shipsCallable);
+        new Thread(ships).start();
+        return ships.get();
+    }
+
+    private synchronized void addToQueue(Thread ship) {
+        if(harbor.isFreePlacesInHarbor()) {
+            harbor.takePlace(ship);
+            letShipsComeIn(harbor.getShips());
+        }
+        else {
+            ship.interrupt();
+            System.out.println("The ship sailed to another harbor...");
+        }
+    }
+
+    private void letShipsComeIn(ArrayList<Thread> ships) {
+        ships.stream().filter(ship -> ship.getState() != Thread.State.RUNNABLE).forEach(Thread::start);
     }
 
     private ShipFactory createShipByType(String type) {
@@ -53,10 +75,30 @@ public class Main {
             throw new RuntimeException();
     }
 
+    private class ShipCreator implements Callable<ArrayList<Thread>> {
+        @Override
+        public ArrayList<Thread> call() {
+            ArrayList<Thread> ships = new ArrayList<>();
+            while(readiness) {
+                Callable<Ship> ship = new ShipCallable();
+                Thread shipThread = new Thread(() -> {
+                    FutureTask<Ship> shipFutureTask = new FutureTask<>(ship);
+                    try {
+                        harbor.serveTheShip(shipFutureTask);
+                    } catch (InterruptedException | ExecutionException exception) {
+                        exception.printStackTrace();
+                    }
+                });
+                ships.add(shipThread);
+            }
+            return ships;
+        }
+    }
+
     private class ShipCallable implements Callable<Ship> {
         @Override
         public Ship call() {
-            ShipFactory shipFactory = createShipByType(shipDrawings[random.nextInt(2)]);
+            ShipFactory shipFactory = createShipByType(shipDrawings[random.nextInt(3)]);
             return shipFactory.createShip();
         }
     }

@@ -7,7 +7,7 @@ public class HeavyShip implements Ship {
     @Override
     public void uploadConsignment() throws InterruptedException {
         System.out.println("Unloading the consignment of the heavy ship...");
-        Thread.sleep(5000);
+        Thread.sleep(3000);
         System.out.println(consignment + " units of consignment were unloaded!");
     }
 

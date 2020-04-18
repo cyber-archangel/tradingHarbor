@@ -1,38 +1,45 @@
 package main;
 
 import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.FutureTask;
-
+import java.util.concurrent.*;
 import main.ships.*;
 
 public class Harbor {
 
-    private volatile List<Callable<Ship>> ships = new ArrayList<>();
+    private final ArrayList<Thread> ships = new ArrayList<>();
     private int totalProfit = 0;
 
     public synchronized void serveTheShip(FutureTask<Ship> ship) throws InterruptedException, ExecutionException {
         System.out.println();
         proceedShip(ship);
+        freeUpDock();
+        System.out.println();
     }
 
     public void proceedShip(FutureTask<Ship> ship) throws InterruptedException, ExecutionException {
         System.out.println("A new ship docked at the marina...");
+        new Thread(ship).start();
         ship.get().uploadConsignment();
         totalProfit += ship.get().getConsignment();
-        freeUpDock();
     }
 
-    private boolean isFreePlacesInHarbor() {
+    public boolean isFreePlacesInHarbor() {
         return ships.size() < 5;
     }
 
-    private void takePlace(Callable<Ship> ship) {
+    public int getTotalProfit() {
+        return totalProfit;
+    }
+
+    public void takePlace(Thread ship) {
         ships.add(ship);
     }
 
     private void freeUpDock() {
         ships.remove(ships.size() - 1);
+    }
+
+    public ArrayList<Thread> getShips() {
+        return ships;
     }
 }
