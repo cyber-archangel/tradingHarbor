@@ -3,14 +3,12 @@ package main;
 import java.util.*;
 import java.util.concurrent.*;
 import main.ships.*;
-import javax.swing.Timer;
 
 public class Main {
 
     private final Harbor harbor = new Harbor();
     private final String[] shipDrawings = {"light", "average", "heavy"};
     private final Random random = new Random();
-    private boolean readiness = true;
 
     public static void main(String[] args) {
         new Main().run();
@@ -19,22 +17,20 @@ public class Main {
     private void run() {
         System.out.println("A new profitable day has begun ...");
 
-        Timer day = new Timer(10, event -> readiness = !readiness);
-
-        day.start();
+        Timer day = new Timer();
+        day.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                System.out.println("The day is over! Profit: " + harbor.getTotalProfit());
+                System.exit(0);
+            }
+        }, 30000);
 
         try {
             shipsQueueMaking();
-            while (readiness) {
-                synchronized (day) {
-                    day.wait();
-                }
-            }
         } catch (InterruptedException | ExecutionException exception) {
             exception.printStackTrace(System.out);
         }
-
-        System.out.println("The day is over! Profit: " + harbor.getTotalProfit());
     }
 
     private synchronized void shipsQueueMaking() throws ExecutionException, InterruptedException {
@@ -59,7 +55,7 @@ public class Main {
     }
 
     private void letShipsComeIn(ArrayList<Thread> ships) {
-        ships.stream().filter(ship -> ship.getState() != Thread.State.RUNNABLE && ship.getState() != Thread.State.BLOCKED).forEach(Thread::start);
+        ships.stream().filter(ship -> ship.getState() != Thread.State.RUNNABLE && ship.getState() != Thread.State.BLOCKED && ship.getState() != Thread.State.WAITING).forEach(Thread::start);
     }
 
     private ShipFactory createShipByType(String type) {
@@ -75,11 +71,9 @@ public class Main {
 
     private class ShipCreator implements Callable<ArrayList<Thread>> {
         @Override
-        public ArrayList<Thread> call() throws InterruptedException {
+        public ArrayList<Thread> call() {
             ArrayList<Thread> ships = new ArrayList<>();
-            while (readiness) {
-                if(ships.size() > 5)
-                    Thread.sleep(3000);
+            for(int i = 0; i < 20; i++) {
                 ships.add(new Thread(() -> {
                     try {
                         harbor.serveTheShip(new FutureTask<>(new createShipCallable()));

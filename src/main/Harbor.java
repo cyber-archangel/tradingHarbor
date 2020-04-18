@@ -25,7 +25,7 @@ public class Harbor {
     }
 
     public boolean isFreePlacesInHarbor() {
-        return ships.size() < 5;
+        return ships.size() < 15;
     }
 
     public int getTotalProfit() {
