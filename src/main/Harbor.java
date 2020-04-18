@@ -6,7 +6,7 @@ import main.ships.*;
 
 public class Harbor {
 
-    private final ArrayList<Thread> ships = new ArrayList<>();
+    private volatile ArrayList<Thread> ships = new ArrayList<>();
     private int totalProfit = 0;
 
     public synchronized void serveTheShip(FutureTask<Ship> ship) throws InterruptedException, ExecutionException {
@@ -21,6 +21,7 @@ public class Harbor {
         new Thread(ship).start();
         ship.get().uploadConsignment();
         totalProfit += ship.get().getConsignment();
+        System.out.println("The ship set sail!");
     }
 
     public boolean isFreePlacesInHarbor() {

@@ -19,13 +19,13 @@ public class Main {
     private void run() {
         System.out.println("A new profitable day has begun ...");
 
-        Timer day = new Timer(10000, event -> readiness = !readiness);
+        Timer day = new Timer(10, event -> readiness = !readiness);
 
         day.start();
 
         try {
             shipsQueueMaking();
-            while (day.isRunning()) {
+            while (readiness) {
                 synchronized (day) {
                     day.wait();
                 }
@@ -43,8 +43,7 @@ public class Main {
     }
 
     private ArrayList<Thread> launchShips() throws ExecutionException, InterruptedException {
-        Callable<ArrayList<Thread>> shipsCallable = new ShipCreator();
-        FutureTask<ArrayList<Thread>> ships = new FutureTask<>(shipsCallable);
+        FutureTask<ArrayList<Thread>> ships = new FutureTask<>(new ShipCreator());
         new Thread(ships).start();
         return ships.get();
     }
@@ -53,15 +52,14 @@ public class Main {
         if(harbor.isFreePlacesInHarbor()) {
             harbor.takePlace(ship);
             letShipsComeIn(harbor.getShips());
-        }
-        else {
+        } else {
             ship.interrupt();
             System.out.println("The ship sailed to another harbor...");
         }
     }
 
     private void letShipsComeIn(ArrayList<Thread> ships) {
-        ships.stream().filter(ship -> ship.getState() != Thread.State.RUNNABLE).forEach(Thread::start);
+        ships.stream().filter(ship -> ship.getState() != Thread.State.RUNNABLE && ship.getState() != Thread.State.BLOCKED).forEach(Thread::start);
     }
 
     private ShipFactory createShipByType(String type) {
@@ -77,25 +75,24 @@ public class Main {
 
     private class ShipCreator implements Callable<ArrayList<Thread>> {
         @Override
-        public ArrayList<Thread> call() {
+        public ArrayList<Thread> call() throws InterruptedException {
             ArrayList<Thread> ships = new ArrayList<>();
-            while(readiness) {
-                Callable<Ship> ship = new ShipCallable();
-                Thread shipThread = new Thread(() -> {
-                    FutureTask<Ship> shipFutureTask = new FutureTask<>(ship);
+            while (readiness) {
+                if(ships.size() > 5)
+                    Thread.sleep(3000);
+                ships.add(new Thread(() -> {
                     try {
-                        harbor.serveTheShip(shipFutureTask);
+                        harbor.serveTheShip(new FutureTask<>(new createShipCallable()));
                     } catch (InterruptedException | ExecutionException exception) {
                         exception.printStackTrace();
                     }
-                });
-                ships.add(shipThread);
+                }));
             }
             return ships;
         }
     }
 
-    private class ShipCallable implements Callable<Ship> {
+    private class createShipCallable implements Callable<Ship> {
         @Override
         public Ship call() {
             ShipFactory shipFactory = createShipByType(shipDrawings[random.nextInt(3)]);
