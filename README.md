@@ -1,4 +1,4 @@
-# tradingHarbor
+# TradingHarbor
 <h2>Description:</h2>
 <ul>
   <li>
