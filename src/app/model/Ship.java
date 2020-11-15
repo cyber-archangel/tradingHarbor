@@ -1,4 +1,4 @@
-package main.ships;
+package app.model;
 
 public interface Ship {
     void uploadConsignment() throws InterruptedException;

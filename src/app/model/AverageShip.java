@@ -1,13 +1,13 @@
-package main.ships;
+package app.model;
 
-public class LightShip implements Ship {
+public class AverageShip implements Ship {
 
-    private final int consignment = 25;
+    private final int consignment = 50;
 
     @Override
     public void uploadConsignment() throws InterruptedException {
-        System.out.println("Unloading the consignment of the light ship...");
-        Thread.sleep(1000);
+        System.out.println("Unloading the consignment of the average ship...");
+        Thread.sleep(2000);
         System.out.println(consignment + " units of consignment were unloaded!");
     }
 

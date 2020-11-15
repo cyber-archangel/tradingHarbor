@@ -1,12 +1,14 @@
-package main;
+package app;
 
 import java.util.*;
 import java.util.concurrent.*;
-import main.ships.*;
+
+import app.model.*;
 
 public class Harbor {
 
     private volatile ArrayList<Thread> ships = new ArrayList<>();
+
     private int totalProfit = 0;
 
     public synchronized void serveTheShip(FutureTask<Ship> ship) throws InterruptedException, ExecutionException {

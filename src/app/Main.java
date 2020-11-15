@@ -1,13 +1,16 @@
-package main;
+package app;
 
 import java.util.*;
 import java.util.concurrent.*;
-import main.ships.*;
+
+import app.model.*;
 
 public class Main {
 
     private final Harbor harbor = new Harbor();
+
     private final String[] shipDrawings = {"light", "average", "heavy"};
+
     private final Random random = new Random();
 
     public static void main(String[] args) {
@@ -15,10 +18,13 @@ public class Main {
     }
 
     private void run() {
+
         System.out.println("A new profitable day has begun ...");
 
         Timer day = new Timer();
+
         day.schedule(new TimerTask() {
+
             @Override
             public void run() {
                 System.out.println("The day is over! Profit: " + harbor.getTotalProfit());
@@ -34,8 +40,7 @@ public class Main {
     }
 
     private synchronized void shipsQueueMaking() throws ExecutionException, InterruptedException {
-        ArrayList<Thread> ships = launchShips();
-        ships.forEach(this::addToQueue);
+        launchShips().forEach(this::addToQueue);
     }
 
     private ArrayList<Thread> launchShips() throws ExecutionException, InterruptedException {
@@ -45,7 +50,7 @@ public class Main {
     }
 
     private synchronized void addToQueue(Thread ship) {
-        if(harbor.isFreePlacesInHarbor()) {
+        if (harbor.isFreePlacesInHarbor()) {
             harbor.takePlace(ship);
             letShipsComeIn(harbor.getShips());
         } else {
@@ -59,7 +64,8 @@ public class Main {
     }
 
     private ShipFactory createShipByType(String type) {
-        if(type.equalsIgnoreCase("light"))
+
+        if (type.equalsIgnoreCase("light"))
             return new LightShipFactory();
         else if(type.equalsIgnoreCase("average"))
             return new AverageShipFactory();
@@ -70,27 +76,32 @@ public class Main {
     }
 
     private class ShipCreator implements Callable<ArrayList<Thread>> {
+
         @Override
         public ArrayList<Thread> call() {
+
             ArrayList<Thread> ships = new ArrayList<>();
-            for(int i = 0; i < 20; i++) {
+
+            for (int i = 0; i < 20; ++i) {
+
                 ships.add(new Thread(() -> {
                     try {
-                        harbor.serveTheShip(new FutureTask<>(new createShipCallable()));
+                        harbor.serveTheShip(new FutureTask<>(new ShipCreatorCallable()));
                     } catch (InterruptedException | ExecutionException exception) {
                         exception.printStackTrace();
                     }
                 }));
             }
+
             return ships;
         }
     }
 
-    private class createShipCallable implements Callable<Ship> {
+    private class ShipCreatorCallable implements Callable<Ship> {
+
         @Override
         public Ship call() {
-            ShipFactory shipFactory = createShipByType(shipDrawings[random.nextInt(3)]);
-            return shipFactory.createShip();
+            return createShipByType(shipDrawings[random.nextInt(3)]).createShip();
         }
     }
 }
