@@ -9,19 +9,19 @@ public class Main {
 
     private final Harbor harbor = new Harbor();
 
-    private final String[] shipDrawings = {"light", "average", "heavy"};
+    private final String[] shipDrawings = { "light", "average", "heavy" };
 
     private final Random random = new Random();
 
-    public static void main(String[] args) {
-        new Main().run();
+    public static void main(String... args) {
+        new Main().execute();
     }
 
-    private void run() {
+    private void execute() {
 
-        System.out.println("A new profitable day has begun ...");
+        System.out.println("A new profitable day has begun...");
 
-        Timer day = new Timer();
+        var day = new Timer();
 
         day.schedule(new TimerTask() {
 
@@ -44,7 +44,7 @@ public class Main {
     }
 
     private ArrayList<Thread> launchShips() throws ExecutionException, InterruptedException {
-        FutureTask<ArrayList<Thread>> ships = new FutureTask<>(new ShipCreator());
+        var ships = new FutureTask<>(new ShipCreator());
         new Thread(ships).start();
         return ships.get();
     }
@@ -60,16 +60,18 @@ public class Main {
     }
 
     private void letShipsComeIn(ArrayList<Thread> ships) {
-        ships.stream().filter(ship -> ship.getState() != Thread.State.RUNNABLE && ship.getState() != Thread.State.BLOCKED && ship.getState() != Thread.State.WAITING).forEach(Thread::start);
+        ships.stream()
+                .filter(x -> x.getState() != Thread.State.RUNNABLE && x.getState() != Thread.State.BLOCKED && x.getState() != Thread.State.WAITING)
+                .forEach(Thread::start);
     }
 
     private ShipFactory createShipByType(String type) {
 
         if (type.equalsIgnoreCase("light"))
             return new LightShipFactory();
-        else if(type.equalsIgnoreCase("average"))
+        else if (type.equalsIgnoreCase("average"))
             return new AverageShipFactory();
-        else if(type.equalsIgnoreCase("heavy"))
+        else if (type.equalsIgnoreCase("heavy"))
             return new HeavyShipFactory();
         else
             throw new RuntimeException();
@@ -80,7 +82,7 @@ public class Main {
         @Override
         public ArrayList<Thread> call() {
 
-            ArrayList<Thread> ships = new ArrayList<>();
+            var ships = new ArrayList<Thread>();
 
             for (int i = 0; i < 20; ++i) {
 

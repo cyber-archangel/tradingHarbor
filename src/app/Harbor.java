@@ -7,7 +7,7 @@ import app.model.*;
 
 public class Harbor {
 
-    private volatile ArrayList<Thread> ships = new ArrayList<>();
+    private final ArrayList<Thread> ships = new ArrayList<>();
 
     private int totalProfit = 0;
 
